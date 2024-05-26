@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Patient Information</title>
+</head>
+<body>
+<div>
+<h1>Patient Details</h1>
+<p>Name: <span th:text="${patient.name}"></span></p>
+<p>Surname: <span th:text="${patient.surname}"></span></p>
+<p>Patronymic: <span th:text="${patient.patronymic}"></span></p>
+<p>Phone: <span th:text="${patient.phone}"></span></p>
+    </div>
+</body>
+</html>

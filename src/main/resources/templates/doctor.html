@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <title>Doctor Page</title>
+  <style>
+    /* Общие стили для всех устройств */
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+      background-color: #f0f0f0;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+    .patient-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .patient-table th,
+    .patient-table td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: left;
+    }
+    .patient-table th {
+      background-color: #f2f2f2;
+    }
+    .patient-table tr:nth-child(even) {
+      background-color: #f9f9f9;
+    }
+
+    .patient-table th:last-child,
+    .patient-table td:last-child {
+      width: 1%; /* Устанавливаем ширину в процентах, чтобы она растягивалась */
+      white-space: nowrap; /* Предотвращаем перенос текста */
+    }
+
+    /* Добавляем стили для кнопки удаления */
+    .patient-table .action-button {
+      width: 100%; /* Делаем кнопку удаления шириной в 100% от ширины ячейки */
+      padding: 5px; /* Уменьшаем отступы внутри кнопки */
+    }
+    .action-button {
+      padding: 10px 15px;
+      background-color: #007BFF;
+      color: white;
+      border: none;
+      cursor: pointer;
+      margin-right: 5px;
+      border-radius: 5px;
+      font-size: 16px;
+    }
+    .action-button:hover {
+      background-color: #0056b3;
+    }
+    /* Стили для формы добавления пациента */
+    .add-patient-form {
+      background-color: #fff;
+      padding: 20px;
+      border-radius: 5px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      margin-top: 20px;
+    }
+    .add-patient-form label {
+      display: block;
+      margin-bottom: 5px;
+    }
+    .add-patient-form input[type="text"] {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 10px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+    }
+    .add-patient-form button[type="submit"] {
+      padding: 10px 15px;
+      background-color: #007BFF;
+      color: white;
+      border: none;
+      cursor: pointer;
+      border-radius: 5px;
+      font-size: 16px;
+    }
+    .add-patient-form button[type="submit"]:hover {
+      background-color: #0056b3;
+    }
+    /* Отзывчивые стили */
+    @media screen and (max-width: 600px) {
+      .container {
+        padding: 10px;
+      }
+      .patient-table th,
+      .patient-table td {
+        padding: 5px;
+      }
+      .action-button {
+        padding: 10px;
+        font-size: 14px;
+      }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h2>Doctor's Dashboard</h2>
+
+  <div>
+    <h3>Doctor Information</h3>
+    <p>Name: <span th:text="${doctor.name}"></span></p>
+    <p>Surname: <span th:text="${doctor.surname}"></span></p>
+    <p>Patronymic: <span th:text="${doctor.patronymic}"></span></p>
+    <p>Specialization: <span th:text="${doctor.specialization}"></span></p>
+    <p>Phone: <span th:text="${doctor.phone}"></span></p>
+  </div>
+
+  <h3>Patient List</h3>
+  <table class="patient-table">
+    <thead>
+    <tr>
+      <th>Name</th>
+      <th></th> <!-- Пустая заголовочная ячейка для кнопки удаления -->
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="patient : ${patients}">
+      <td><a th:href="@{/patient_info(patientId=${patient.id}, doctorId=${doctorId})}"  th:text="${patient.surname} + ' ' + ${patient.name} + ' ' + ${patient.patronymic}"></a></td>
+      <td>
+        <form th:action="@{/doctor/delete/{id}(id=${patient.id})}" method="post" style="display: inline;">
+          <button class="action-button" type="submit">Delete</button>
+        </form>
+      </td>
+    </tr>
+    </tbody>
+  </table>
+
+  <button id="addPatientButton" class="action-button">Add Patient</button>
+
+  <div id="addPatientForm" class="add-patient-form" style="display: none;">
+    <h3>Add Patient</h3>
+    <form th:action="@{/doctors/doctor/{id}/add_patient(id=${doctorId})}" method="post">
+      <label for="email">Email:</label>
+      <input type="text" id="email" name="email" placeholder="Patient Email" required>
+      <label for="password">Password:</label>
+      <input type="password" id="password" name="password" placeholder="Patient password" required>
+      <label for="name">Name:</label>
+      <input type="text" id="name" name="name" placeholder="Patient Name" required>
+      <label for="surname">Surname:</label>
+      <input type="text" id="surname" name="surname" placeholder="Patient Surname" required>
+      <label for="patronymic">Patronymic:</label>
+      <input type="text" id="patronymic" name="patronymic" placeholder="Patient Patronymic" required>
+      <label for="diagnosis">Diagnosis:</label>
+      <input type="text" id="diagnosis" name="diagnosis" placeholder="Patient Diagnosis" required>
+      <label for="operation">Operation:</label>
+      <input type="text" id="operation" name="operation" placeholder="Patient operation" required>
+      <label for="operationDate">Operation Date:</label>
+      <input type="date" id="operationDate" name="operationDate" placeholder="Patient operationDate" required>
+
+      <label for="phone">Phone:</label>
+      <input type="text" id="phone" name="phone" placeholder="Patient phone" required>
+      <button type="submit">Create Patient</button>
+    </form>
+  </div>
+</div>
+
+<script>
+  document.getElementById('addPatientButton').addEventListener('click', function() {
+    var form = document.getElementById('addPatientForm');
+    if (form) {
+      form.style.display = form.style.display === 'none' ? 'block' : 'none';
+    }
+  });
+</script>
+
+</body>
+</html>

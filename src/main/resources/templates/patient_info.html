@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Patient Information</title>
+    <!-- Подключаем необходимые стили и скрипты -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/moment"></script>
+    <style>
+        /* Добавляем необходимые стили для графиков */
+        .graph-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-around;
+        }
+        .graph-container div {
+            width: 45%;
+            margin-bottom: 20px;
+        }
+        canvas {
+            width: 100% !important;
+            height: auto !important;
+        }
+    </style>
+</head>
+<body>
+
+
+<div class="container">
+    <h2>Patient Information</h2>
+    <p>Name: <span th:text="${patient.name}"></span></p>
+    <p>Surname: <span th:text="${patient.surname}"></span></p>
+    <p>Patronymic: <span th:text="${patient.patronymic}"></span></p>
+    <p>Diagnosis: <span th:text="${patient.diagnosis}"></span></p>
+    <p>Operation: <span th:text="${patient.operation}"></span></p>
+    <p>Operation Date: <span th:text="${patient.operationDate}"></span></p>
+    <p>Phone: <span th:text="${patient.phone}"></span></p>
+</div>
+
+<div class="container graph-container">
+    <div>
+        <h3>Energy Graph</h3>
+        <canvas id="energyGraph" th:attr="data-energy-data=${energyGraphData}"></canvas>
+    </div>
+    <div>
+        <h3>Steps Graph</h3>
+        <canvas id="stepsGraph" th:attr="data-steps-data=${stepsGraphData}"></canvas>
+    </div>
+    <div>
+        <h3>Heart Rate Graph</h3>
+        <canvas id="heartRateGraph" th:attr="data-heartRate-data=${heartRateGraphData}"></canvas>
+    </div>
+    <div>
+        <h3>Stress Level Graph</h3>
+        <canvas id="stressLevelGraph" th:attr="data-stressLevel-data=${stressLevelGraphData}"></canvas>
+    </div>
+    <div>
+        <h3>Sleep Duration Graph</h3>
+        <canvas id="sleepDurationGraph" th:attr="data-sleepDuration-data=${sleepDurationGraphData}"></canvas>
+    </div>
+</div>
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    var energyGraphData = /*[[${energyGraphData}]]*/ [];
+    var stepsGraphData = /*[[${stepsGraphData}]]*/ [];
+    var heartRateGraphData = /*[[${heartRateGraphData}]]*/ [];
+    var stressLevelGraphData = /*[[${stressLevelGraphData}]]*/ [];
+    var sleepDurationGraphData = /*[[${sleepDurationGraphData}]]*/ [];
+
+    // Инициализация графика энергии
+    var energyCtx = document.getElementById('energyGraph').getContext('2d');
+    var energyChart = new Chart(energyCtx, {
+        type: 'line',
+        data: {
+            labels: energyGraphData.map(function(item) { return item.x; }),
+            datasets: [{
+                label: 'Energy',
+                data: energyGraphData.map(function(item) { return item.y; }),
+                borderColor: 'rgba(75, 192, 192, 1)',
+                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+            }]
+        },
+        options: {
+            scales: {
+                xAxes: [{
+                    type: 'time',
+                    time: {
+                        unit: 'hour',
+                        displayFormats: {
+                            hour: 'MMM DD hA'
+                        },
+                        tooltipFormat: 'll hA'
+                    },
+                    scaleLabel: {
+                        display: true,
+                        labelString: 'Time'
+                    }
+                }],
+                yAxes: [{
+                    scaleLabel: {
+                        display: true,
+                        labelString: 'Value'
+                    }
+                }]
+            }
+        }
+    });
+
+    // Инициализация графика шагов
+    var stepsCtx = document.getElementById('stepsGraph').getContext('2d');
+    var stepsChart = new Chart(stepsCtx, {
+        type: 'line',
+        data: {
+            labels: stepsGraphData.map(function(item) { return item.x; }),
+            datasets: [{
+                label: 'Steps',
+                data: stepsGraphData.map(function(item) { return item.y; }),
+                borderColor: 'rgba(75, 192, 192, 1)',
+                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+            }]
+        },
+        options: {
+            scales: {
+                xAxes: [{
+                    type: 'time',
+                    time: {
+                        unit: 'hour',
+                        displayFormats: {
+                            hour: 'MMM DD hA'
+                        },
+                        tooltipFormat: 'll hA'
+                    },
+                    scaleLabel: {
+                        display: true,
+                        labelString: 'Time'
+                    }
+                }],
+                yAxes: [{
+                    scaleLabel: {
+                        display: true,
+                        labelString: 'Value'
+                    }
+                }]
+            }
+        }
+    });
+
+    // Инициализация графика пульса
+    var heartRateCtx = document.getElementById('heartRateGraph').getContext('2d');
+    var heartRateChart = new Chart(heartRateCtx, {
+        type: 'line',
+        data: {
+            labels: heartRateGraphData.map(function(item) { return item.x; }),
+            datasets: [{
+                label: 'Heart Rate',
+                data: heartRateGraphData.map(function(item) { return item.y; }),
+                borderColor: 'rgba(75, 192, 192, 1)',
+                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+            }]
+        },
+        options: {
+            scales: {
+                xAxes: [{
+                    type: 'time',
+                    time: {
+                        unit: 'hour',
+                        displayFormats: {
+                            hour: 'MMM DD hA'
+                        },
+                        tooltipFormat: 'll hA'
+                    },
+                    scaleLabel: {
+                        display: true,
+                        labelString: 'Time'
+                    }
+                }],
+                yAxes: [{
+                    scaleLabel: {
+                        display: true,
+                        labelString: 'Value'
+                    }
+                }]
+            }
+        }
+    });
+
+    // Инициализация графика уровня стресса
+    var stressLevelCtx = document.getElementById('stressLevelGraph').getContext('2d');
+    var stressLevelChart = new Chart(stressLevelCtx, {
+        type: 'line',
+        data: {
+            labels: stressLevelGraphData.map(function(item) { return item.x; }),
+            datasets: [{
+                label: 'Stress Level',
+                data: stressLevelGraphData.map(function(item) { return item.y; }),
+                borderColor: 'rgba(75, 192, 192, 1)',
+                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+            }]
+        },
+        options: {
+            scales: {
+                xAxes: [{
+                    type: 'time',
+                    time: {
+                        unit: 'hour',
+                        displayFormats: {
+                            hour: 'MMM DD hA'
+                        },
+                        tooltipFormat: 'll hA'
+                    },
+                    scaleLabel: {
+                        display: true,
+                        labelString: 'Time'
+                    }
+                }],
+                yAxes: [{
+                    scaleLabel: {
+                        display: true,
+                        labelString: 'Value'
+                    }
+                }]
+            }
+        }
+    });
+
+    // Инициализация графика продолжительности сна
+    var sleepDurationCtx = document.getElementById('sleepDurationGraph').getContext('2d');
+    var sleepDurationChart = new Chart(sleepDurationCtx, {
+        type: 'line',
+        data: {
+            labels: sleepDurationGraphData.map(function(item) { return item.x; }),
+            datasets: [{
+                label: 'Sleep Duration',
+                data: sleepDurationGraphData.map(function(item) { return item.y; }),
+                borderColor: 'rgba(75, 192, 192, 1)',
+                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+            }]
+        },
+        options: {
+            scales: {
+                xAxes: [{
+                    type: 'time',
+                    time: {
+                        unit: 'hour',
+                        displayFormats: {
+                            hour: 'MMM DD hA'
+                        },
+                        tooltipFormat: 'll hA'
+                    },
+                    scaleLabel: {
+                        display: true,
+                        labelString: 'Time'
+                    }
+                }],
+                yAxes: [{
+                    scaleLabel: {
+                        display: true,
+                        labelString: 'Value'
+                    }
+                }]
+            }
+        }
+    });
+    /*]]>*/
+</script>
+</body>
+</html>
