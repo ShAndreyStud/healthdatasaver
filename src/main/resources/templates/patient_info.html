@@ -2,11 +2,10 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <title>Patient Information</title>
-    <!-- Подключаем необходимые стили и скрипты -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/moment"></script>
+    <script src="https://cdn.jsdelivr.net/npm/moment@2.29.1/min/moment.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-moment@1.0.0"></script>
     <style>
-        /* Добавляем необходимые стили для графиков */
         .graph-container {
             display: flex;
             flex-wrap: wrap;
@@ -20,10 +19,29 @@
             width: 100% !important;
             height: auto !important;
         }
+        .date-picker-container {
+            margin-bottom: 20px;
+            text-align: right;
+        }
+        .date-picker-container input {
+            margin-left: 10px;
+        }
+        .date-picker-container button {
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            padding: 10px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 50%;
+        }
     </style>
 </head>
 <body>
-
 
 <div class="container">
     <h2>Patient Information</h2>
@@ -34,6 +52,13 @@
     <p>Operation: <span th:text="${patient.operation}"></span></p>
     <p>Operation Date: <span th:text="${patient.operationDate}"></span></p>
     <p>Phone: <span th:text="${patient.phone}"></span></p>
+</div>
+
+<div class="container date-picker-container">
+    <button id="prevDate">&lt;</button>
+    <label for="datePicker">Select Date: </label>
+    <input type="date" id="datePicker">
+    <button id="nextDate">&gt;</button>
 </div>
 
 <div class="container graph-container">
@@ -66,200 +91,449 @@
     var stressLevelGraphData = /*[[${stressLevelGraphData}]]*/ [];
     var sleepDurationGraphData = /*[[${sleepDurationGraphData}]]*/ [];
 
-    // Инициализация графика энергии
+    console.log('Energy Data:', energyGraphData);
+    console.log('Steps Data:', stepsGraphData);
+    console.log('Heart Rate Data:', heartRateGraphData);
+    console.log('Stress Level Data:', stressLevelGraphData);
+    console.log('Sleep Duration Data:', sleepDurationGraphData);
+
+    // Функция для фильтрации данных по дате
+    function filterDataByDate(data, date) {
+        return data.filter(function(item) {
+            return moment(item.x).isSame(date, 'day');
+        });
+    }
+
+    // Функция для обновления графиков и подсказок
+    function updateCharts(date) {
+        var filteredEnergyData = filterDataByDate(energyGraphData, date);
+        var filteredStepsData = filterDataByDate(stepsGraphData, date);
+        var filteredHeartRateData = filterDataByDate(heartRateGraphData, date);
+        var filteredStressLevelData = filterDataByDate(stressLevelGraphData, date);
+        var filteredSleepDurationData = filterDataByDate(sleepDurationGraphData, date);
+
+        energyChart.data.labels = filteredEnergyData.map(function(item) { return moment.utc(item.x).utcOffset(3).format('HH:mm'); });
+        energyChart.data.datasets[0].data = filteredEnergyData.map(function(item) { return item.y; });
+
+        stepsChart.data.labels = filteredStepsData.map(function(item) { return moment.utc(item.x).utcOffset(3).format('HH:mm'); });
+        stepsChart.data.datasets[0].data = filteredStepsData.map(function(item) { return item.y; });
+
+        heartRateChart.data.labels = filteredHeartRateData.map(function(item) { return moment.utc(item.x).utcOffset(3).format('HH:mm'); });
+        heartRateChart.data.datasets[0].data = filteredHeartRateData.map(function(item) { return item.y; });
+
+        stressLevelChart.data.labels = filteredStressLevelData.map(function(item) { return moment.utc(item.x).utcOffset(3).format('HH:mm'); });
+        stressLevelChart.data.datasets[0].data = filteredStressLevelData.map(function(item) { return item.y; });
+
+        sleepDurationChart.data.labels = filteredSleepDurationData.map(function(item) { return moment.utc(item.x).utcOffset(3).format('HH:mm'); });
+        sleepDurationChart.data.datasets[0].data = filteredSleepDurationData.map(function(item) { return item.y; });
+
+        // Обновляем графики
+        energyChart.update();
+        stepsChart.update();
+        heartRateChart.update();
+        stressLevelChart.update();
+        sleepDurationChart.update();
+
+        // Обновляем подсказки на графиках
+        updateTooltips(energyChart);
+        updateTooltips(stepsChart);
+        updateTooltips(heartRateChart);
+        updateTooltips(stressLevelChart);
+        updateTooltips(sleepDurationChart);
+    }
+
+    // Функция для обновления подсказок на графиках
+    function updateTooltips(chart) {
+        chart.options.plugins.tooltip.callbacks.label = function(context) {
+            var label = context.dataset.label || '';
+
+            if (label) {
+                label += ': ';
+            }
+
+            if (context.parsed.y !== null) {
+                label += context.parsed.y.toFixed(2);
+            }
+
+            var time = moment(context.parsed.x).utcOffset(3).locale('ru');
+            label += ' (' + time.format('HH:mm') + ')';
+
+            return label;
+        };
+    }
+
+    // Функция для получения максимальной даты из данных
+    function getMaxDate(dataArrays) {
+        var allDates = dataArrays.flat().map(function(item) { return moment(item.x); });
+        return moment.max(allDates);
+    }
+
+    // Получение начальной даты
+    var maxDate = getMaxDate([energyGraphData, stepsGraphData, heartRateGraphData, stressLevelGraphData, sleepDurationGraphData]);
+
+    // Установка начальной даты в поле выбора даты
+    document.getElementById('datePicker').value = maxDate.format('YYYY-MM-DD');
+
+    // Инициализация графиков
     var energyCtx = document.getElementById('energyGraph').getContext('2d');
     var energyChart = new Chart(energyCtx, {
         type: 'line',
         data: {
-            labels: energyGraphData.map(function(item) { return item.x; }),
+            labels: [],
             datasets: [{
                 label: 'Energy',
-                data: energyGraphData.map(function(item) { return item.y; }),
+                data: [],
                 borderColor: 'rgba(75, 192, 192, 1)',
                 backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                borderWidth: 2,
+                pointRadius: 0,
+                fill: false
             }]
         },
         options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    mode: 'index',
+                    intersect: false
+                }
+            },
             scales: {
-                xAxes: [{
+                x: {
                     type: 'time',
                     time: {
+                        parser: 'HH:mm', // Парсер времени
                         unit: 'hour',
                         displayFormats: {
-                            hour: 'MMM DD hA'
-                        },
-                        tooltipFormat: 'll hA'
+                            hour: 'HH:mm'
+                        }
                     },
-                    scaleLabel: {
+                    title: {
                         display: true,
-                        labelString: 'Time'
+                        text: 'Time'
+                    },
+                    ticks: {
+                        source: 'auto', // Используем автоматический источник для меток времени
+                        autoSkip: true,
+                        maxTicksLimit: 24 // Максимальное количество меток (часов в дне)
+                    },
+                    grid: {
+                        display: true
                     }
-                }],
-                yAxes: [{
-                    scaleLabel: {
+                },
+                y: {
+                    title: {
                         display: true,
-                        labelString: 'Value'
+                        text: 'Value'
+                    },
+                    grid: {
+                        color: 'rgba(200, 200, 200, 0.2)'
                     }
-                }]
+                }
+            },
+            elements: {
+                line: {
+                    tension: 0.3
+                }
             }
         }
     });
 
-    // Инициализация графика шагов
     var stepsCtx = document.getElementById('stepsGraph').getContext('2d');
     var stepsChart = new Chart(stepsCtx, {
         type: 'line',
         data: {
-            labels: stepsGraphData.map(function(item) { return item.x; }),
+            labels: [],
             datasets: [{
                 label: 'Steps',
-                data: stepsGraphData.map(function(item) { return item.y; }),
-                borderColor: 'rgba(75, 192, 192, 1)',
-                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                data: [],
+                borderColor: 'rgba(153, 102, 255, 1)',
+                backgroundColor: 'rgba(153, 102, 255, 0.2)',
+                borderWidth: 2,
+                pointRadius: 0,
+                fill: false
             }]
         },
         options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    mode: 'index',
+                    intersect: false
+                }
+            },
             scales: {
-                xAxes: [{
+                x: {
                     type: 'time',
                     time: {
+                        parser: 'HH:mm', // Парсер времени
                         unit: 'hour',
                         displayFormats: {
-                            hour: 'MMM DD hA'
-                        },
-                        tooltipFormat: 'll hA'
+                            hour: 'HH:mm'
+                        }
                     },
-                    scaleLabel: {
+                    title: {
                         display: true,
-                        labelString: 'Time'
+                        text: 'Time'
+                    },
+                    ticks: {
+                        source: 'auto', // Используем автоматический источник для меток времени
+                        autoSkip: true,
+                        maxTicksLimit: 24 // Максимальное количество меток (часов в дне)
+                    },
+                    grid: {
+                        display: true
                     }
-                }],
-                yAxes: [{
-                    scaleLabel: {
+                },
+                y: {
+                    title: {
                         display: true,
-                        labelString: 'Value'
+                        text: 'Value'
+                    },
+                    grid: {
+                        color: 'rgba(200, 200, 200, 0.2)'
                     }
-                }]
+                }
+            },
+            elements: {
+                line: {
+                    tension: 0.3
+                }
             }
         }
     });
 
-    // Инициализация графика пульса
     var heartRateCtx = document.getElementById('heartRateGraph').getContext('2d');
     var heartRateChart = new Chart(heartRateCtx, {
         type: 'line',
         data: {
-            labels: heartRateGraphData.map(function(item) { return item.x; }),
+            labels: [],
             datasets: [{
                 label: 'Heart Rate',
-                data: heartRateGraphData.map(function(item) { return item.y; }),
-                borderColor: 'rgba(75, 192, 192, 1)',
-                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                data: [],
+                borderColor: 'rgba(255, 99, 132, 1)',
+                backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                borderWidth: 2,
+                pointRadius: 0,
+                fill: false
             }]
         },
         options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    mode: 'index',
+                    intersect: false
+                }
+            },
             scales: {
-                xAxes: [{
+                x: {
                     type: 'time',
                     time: {
+                        parser: 'HH:mm', // Парсер времени
                         unit: 'hour',
                         displayFormats: {
-                            hour: 'MMM DD hA'
-                        },
-                        tooltipFormat: 'll hA'
+                            hour: 'HH:mm'
+                        }
                     },
-                    scaleLabel: {
+                    title: {
                         display: true,
-                        labelString: 'Time'
+                        text: 'Time'
+                    },
+                    ticks: {
+                        source: 'auto', // Используем автоматический источник для меток времени
+                        autoSkip: true,
+                        maxTicksLimit: 24 // Максимальное количество меток (часов в дне)
+                    },
+                    grid: {
+                        display: true
                     }
-                }],
-                yAxes: [{
-                    scaleLabel: {
+                },
+                y: {
+                    title: {
                         display: true,
-                        labelString: 'Value'
+                        text: 'Value'
+                    },
+                    grid: {
+                        color: 'rgba(200, 200, 200, 0.2)'
                     }
-                }]
+                }
+            },
+            elements: {
+                line: {
+                    tension: 0.3
+                }
             }
         }
     });
 
-    // Инициализация графика уровня стресса
     var stressLevelCtx = document.getElementById('stressLevelGraph').getContext('2d');
     var stressLevelChart = new Chart(stressLevelCtx, {
         type: 'line',
         data: {
-            labels: stressLevelGraphData.map(function(item) { return item.x; }),
+            labels: [],
             datasets: [{
                 label: 'Stress Level',
-                data: stressLevelGraphData.map(function(item) { return item.y; }),
-                borderColor: 'rgba(75, 192, 192, 1)',
-                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                data: [],
+                borderColor: 'rgba(255, 206, 86, 1)',
+                backgroundColor: 'rgba(255, 206, 86, 0.2)',
+                borderWidth: 2,
+                pointRadius: 0,
+                fill: false
             }]
         },
         options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    mode: 'index',
+                    intersect: false
+                }
+            },
             scales: {
-                xAxes: [{
+                x: {
                     type: 'time',
                     time: {
+                        parser: 'HH:mm', // Парсер времени
                         unit: 'hour',
                         displayFormats: {
-                            hour: 'MMM DD hA'
-                        },
-                        tooltipFormat: 'll hA'
+                            hour: 'HH:mm'
+                        }
                     },
-                    scaleLabel: {
+                    title: {
                         display: true,
-                        labelString: 'Time'
+                        text: 'Time'
+                    },
+                    ticks: {
+                        source: 'auto', // Используем автоматический источник для меток времени
+                        autoSkip: true,
+                        maxTicksLimit: 24 // Максимальное количество меток (часов в дне)
+                    },
+                    grid: {
+                        display: true
                     }
-                }],
-                yAxes: [{
-                    scaleLabel: {
+                },
+                y: {
+                    title: {
                         display: true,
-                        labelString: 'Value'
+                        text: 'Value'
+                    },
+                    grid: {
+                        color: 'rgba(200, 200, 200, 0.2)'
                     }
-                }]
+                }
+            },
+            elements: {
+                line: {
+                    tension: 0.3
+                }
             }
         }
     });
 
-    // Инициализация графика продолжительности сна
     var sleepDurationCtx = document.getElementById('sleepDurationGraph').getContext('2d');
     var sleepDurationChart = new Chart(sleepDurationCtx, {
         type: 'line',
         data: {
-            labels: sleepDurationGraphData.map(function(item) { return item.x; }),
+            labels: [],
             datasets: [{
                 label: 'Sleep Duration',
-                data: sleepDurationGraphData.map(function(item) { return item.y; }),
-                borderColor: 'rgba(75, 192, 192, 1)',
-                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                data: [],
+                borderColor: 'rgba(54, 162, 235, 1)',
+                backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                borderWidth: 2,
+                pointRadius: 0,
+                fill: false
             }]
         },
         options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    mode: 'index',
+                    intersect: false
+                }
+            },
             scales: {
-                xAxes: [{
+                x: {
                     type: 'time',
                     time: {
+                        parser: 'HH:mm', // Парсер времени
                         unit: 'hour',
                         displayFormats: {
-                            hour: 'MMM DD hA'
-                        },
-                        tooltipFormat: 'll hA'
+                            hour: 'HH:mm'
+                        }
                     },
-                    scaleLabel: {
+                    title: {
                         display: true,
-                        labelString: 'Time'
+                        text: 'Time'
+                    },
+                    ticks: {
+                        source: 'auto', // Используем автоматический источник для меток времени
+                        autoSkip: true,
+                        maxTicksLimit: 24 // Максимальное количество меток (часов в дне)
+                    },
+                    grid: {
+                        display: true
                     }
-                }],
-                yAxes: [{
-                    scaleLabel: {
+                },
+                y: {
+                    title: {
                         display: true,
-                        labelString: 'Value'
+                        text: 'Value'
+                    },
+                    grid: {
+                        color: 'rgba(200, 200, 200, 0.2)'
                     }
-                }]
+                }
+            },
+            elements: {
+                line: {
+                    tension: 0.3
+                }
             }
         }
     });
+
+    // Обработчик изменения даты
+    document.getElementById('datePicker').addEventListener('change', function(event) {
+        var selectedDate = event.target.value;
+        updateCharts(selectedDate);
+    });
+
+    // Обработчики для кнопок предыдущей и следующей даты
+    document.getElementById('prevDate').addEventListener('click', function() {
+        var currentDate = moment(document.getElementById('datePicker').value);
+        var newDate = currentDate.subtract(1, 'days').format('YYYY-MM-DD');
+        document.getElementById('datePicker').value = newDate;
+        updateCharts(newDate);
+    });
+
+    document.getElementById('nextDate').addEventListener('click', function() {
+        var currentDate = moment(document.getElementById('datePicker').value);
+        var newDate = currentDate.add(1, 'days').format('YYYY-MM-DD');
+        document.getElementById('datePicker').value = newDate;
+        updateCharts(newDate);
+    });
+
+    // Инициализация графиков с начальной датой
+    updateCharts(maxDate.format('YYYY-MM-DD'));
+
     /*]]>*/
 </script>
 </body>
