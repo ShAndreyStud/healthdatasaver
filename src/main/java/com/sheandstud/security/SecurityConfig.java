@@ -30,7 +30,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     @Override
     protected void configure(HttpSecurity http) throws Exception {
         http
-               //.csrf().disable() // Отключаем CSRF-защиту
+                .csrf().disable() // Отключаем CSRF-защиту
                 .authorizeRequests()
                 .antMatchers("/login").permitAll() // Разрешаем доступ к странице входа всем
                 .antMatchers("/api/healthdata").permitAll() // Разрешить доступ к /api/healthdata без аутентификации
